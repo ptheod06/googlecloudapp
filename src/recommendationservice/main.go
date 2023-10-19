@@ -20,6 +20,9 @@ import (
 	"net"
 	"os"
 	"time"
+	"io/ioutil"
+	"encoding/json"
+	"strconv"
 
 	"cloud.google.com/go/profiler"
 //	"github.com/google/uuid"
@@ -39,9 +42,24 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
+type ProdOut struct {
+
+	Sku int
+	Similarity float64
+}
+
+type SimProducts struct {
+
+	Sku int
+	SimilarProducts []ProdOut
+}
+
+
 const (
 	listenPort  = "8080"
 )
+
+var prods []SimProducts
 
 var log *logrus.Logger
 
@@ -80,6 +98,13 @@ func main() {
 	} else {
 		log.Info("Profiling disabled.")
 	}
+
+	err := readRecommFile(&prods)
+	if err != nil {
+		log.Warnf("could not parse recommendations catalog")
+	}
+
+	log.Info(prods[1])
 
 	port := listenPort
 	if os.Getenv("PORT") != "" {
@@ -189,6 +214,20 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	}
 }
 
+func readRecommFile(catalog *[]SimProducts) error {
+	catalogJSON, err := ioutil.ReadFile("recommProducts.json")
+	if err != nil {
+		log.Fatalf("failed to open recommendations catalog json file: %v", err)
+		return err
+	}
+	if err := json.Unmarshal(catalogJSON, catalog); err != nil {
+		log.Warnf("failed to parse the catalog JSON: %v", err)
+		return err
+	}
+	log.Info("successfully parsed recommendations catalog json")
+	return nil
+}
+
 func (rs *recommendationService) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
 }
@@ -200,6 +239,18 @@ func (rs *recommendationService) Watch(req *healthpb.HealthCheckRequest, ws heal
 
 func (rs *recommendationService) ListRecommendations(ctx context.Context, in *pb.ListRecommendationsRequest) (*pb.ListRecommendationsResponse, error) {
 
+	var similarProducts = string[]
+	for _, item := range prods {
+		//if (in.ProductIds[0] == strconv.Itoa(item.Sku)) {
+		//	for i := 0; i < len(item.SimilarProducts); i++ {
+//				similarProducts = append(similarProducts, strconv.Itoa(item.SimilarProducts[i].Sku))
+		//	}
+		//	break
+		//}
+
+	}
+
+	log.Info(similarProducts)
 	return &pb.ListRecommendationsResponse{ProductIds: []string{"1006126"}}, nil
 
 }
