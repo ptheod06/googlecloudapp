@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.14.0
 	golang.org/x/net v0.9.0
 	google.golang.org/grpc v1.54.0
+	github.com/rabbitmq/amqp091-go v1.9.0
 )
 
 require (

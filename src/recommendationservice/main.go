@@ -32,6 +32,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	amqp "github.com/rabbitmq/amqp091-go"
+
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/recommendationservice/genproto"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
@@ -63,6 +65,13 @@ var prods []SimProducts
 
 var log *logrus.Logger
 
+
+func failOnError(err error, msg string) {
+  if err != nil {
+    log.Panicf("%s: %s", msg, err)
+  }
+}
+
 func init() {
 	log = logrus.New()
 	log.Level = logrus.DebugLevel
@@ -82,6 +91,51 @@ type recommendationService struct {
 	productCatalogSvcConn *grpc.ClientConn
 }
 
+func runReceiver() {
+
+
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq")
+	failOnError(err, "Failed to connect to RabbitMQ")
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
+	  "hello", // name
+	  false,   // durable
+	  false,   // delete when unused
+	  false,   // exclusive
+	  false,   // no-wait
+	  nil,     // arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+
+	msgs, err := ch.Consume(
+	  q.Name, // queue
+	  "",     // consumer
+	  true,   // auto-ack
+	  false,  // exclusive
+	  false,  // no-local
+	  false,  // no-wait
+	  nil,    // args
+	)
+	failOnError(err, "Failed to register a consumer")
+
+	var forever chan struct{}
+
+	go func() {
+	  for d := range msgs {
+	    log.Printf("Received a message: %s", d.Body)
+	  }
+	}()
+
+	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	<-forever
+
+}
+
 func main() {
 	ctx := context.Background()
 	if os.Getenv("ENABLE_TRACING") == "1" {
@@ -99,12 +153,12 @@ func main() {
 		log.Info("Profiling disabled.")
 	}
 
+	go runReceiver()
+
 	err := readRecommFile(&prods)
 	if err != nil {
 		log.Warnf("could not parse recommendations catalog")
 	}
-
-	log.Info(prods[1])
 
 	port := listenPort
 	if os.Getenv("PORT") != "" {

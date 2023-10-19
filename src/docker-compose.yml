@@ -1,5 +1,12 @@
 version: "3"
 services:
+  rabbitmq:
+    image: rabbitmq
+    container_name: 'gcloud_app_rabbitmq'
+    ports:
+      - "5672:5672"
+    restart: always
+
   frontend:
     build: ./frontend/
 #    image: gcr.io/google-samples/microservices-demo/frontend:v0.5.1
