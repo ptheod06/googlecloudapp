@@ -239,18 +239,17 @@ func (rs *recommendationService) Watch(req *healthpb.HealthCheckRequest, ws heal
 
 func (rs *recommendationService) ListRecommendations(ctx context.Context, in *pb.ListRecommendationsRequest) (*pb.ListRecommendationsResponse, error) {
 
-	var similarProducts = string[]
+	var similarProducts []string
 	for _, item := range prods {
-		//if (in.ProductIds[0] == strconv.Itoa(item.Sku)) {
-		//	for i := 0; i < len(item.SimilarProducts); i++ {
-//				similarProducts = append(similarProducts, strconv.Itoa(item.SimilarProducts[i].Sku))
-		//	}
-		//	break
-		//}
+		if (in.ProductIds[0] == strconv.Itoa(item.Sku)) {
+			for i := 0; i < len(item.SimilarProducts); i++ {
+				similarProducts = append(similarProducts, strconv.Itoa(item.SimilarProducts[i].Sku))
+			}
+			break
+		}
 
 	}
 
-	log.Info(similarProducts)
-	return &pb.ListRecommendationsResponse{ProductIds: []string{"1006126"}}, nil
+	return &pb.ListRecommendationsResponse{ProductIds: similarProducts[:4]}, nil
 
 }
