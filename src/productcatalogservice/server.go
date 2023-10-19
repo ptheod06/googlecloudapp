@@ -27,6 +27,7 @@ import (
 	"sync"
 	"syscall"
 	"time"
+	"math/rand"
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -207,7 +208,7 @@ type productCatalog struct{}
 func readCatalogFile(catalog *pb.ListProductsResponse) error {
 	catalogMutex.Lock()
 	defer catalogMutex.Unlock()
-	catalogJSON, err := ioutil.ReadFile("products.json")
+	catalogJSON, err := ioutil.ReadFile("bestBuyProducts.json")
 	if err != nil {
 		log.Fatalf("failed to open product catalog json file: %v", err)
 		return err
@@ -240,7 +241,10 @@ func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Hea
 
 func (p *productCatalog) ListProducts(context.Context, *pb.Empty) (*pb.ListProductsResponse, error) {
 	time.Sleep(extraLatency)
-	return &pb.ListProductsResponse{Products: parseCatalog()}, nil
+
+	startNum := rand.Intn(1000)
+	endNum := startNum + 10
+	return &pb.ListProductsResponse{Products: parseCatalog()[startNum:endNum]}, nil
 }
 
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
