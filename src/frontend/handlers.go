@@ -213,19 +213,36 @@ func (fe *frontendServer) newProductHandler(w http.ResponseWriter, r *http.Reque
 	missingParam := false
 
 	for _, param := range neededParams {
-		if _, ok := r.Form[param]; !ok {
+		val, ok := r.Form[param];
+		if !ok {
 			missingParam = true
-			break
+                        break
+		} else {
+			if val[0] == "" {
+				missingParam = true
+	                        break
+
+			}
 		}
 	}
-	
+
 
 	if (missingParam) {
 		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		io.WriteString(w, fmt.Sprintf("%+v", r.Form))
-		w.WriteHeader(http.StatusOK)
+		return
 	}
+
+	amount := &pb.Money{CurrencyCode: "USD", Units: 15, Nanos: 990000000}
+
+	err := fe.addProduct(r.Context(), amount, r.Form["id"][0], r.Form["name"][0], r.Form["description"][0], r.Form["picture"][0], []string{"firstcat", "secondcat"})
+
+	if err != nil {
+		log.Info("error occured")
+	}
+
+	io.WriteString(w, fmt.Sprint(r.Form["id"][0]))
+        w.WriteHeader(http.StatusOK)
+
 }
 
 func (fe *frontendServer) addToCartHandler(w http.ResponseWriter, r *http.Request) {
