@@ -274,6 +274,24 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 	return &pb.SearchProductsResponse{Results: ps}, nil
 }
 
+func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*pb.Empty, error) {
+	var found bool
+	found = false
+	for i := 0; i < len(parseCatalog()); i++ {
+                if req.Id == parseCatalog()[i].Id {
+                        found = true
+			break
+                }
+        }
+        if found == false {
+		log.Info("Is this a new Product?")
+                return nil, status.Errorf(codes.NotFound, "no product with ID %s", req.Id)
+        }
+
+	log.Info("Already existsss!!!!")
+        return &pb.Empty{}, nil
+}
+
 func mustMapEnv(target *string, envKey string) {
 	v := os.Getenv(envKey)
 	if v == "" {

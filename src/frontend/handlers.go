@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"io"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -203,6 +204,27 @@ func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request)
 		"deploymentDetails": deploymentDetailsMap,
 	}); err != nil {
 		log.Println(err)
+	}
+}
+
+func (fe *frontendServer) newProductHandler(w http.ResponseWriter, r *http.Request) {
+	neededParams := []string{"id", "name", "description", "picture", "units", "nanos"}
+	r.ParseForm()
+	missingParam := false
+
+	for _, param := range neededParams {
+		if _, ok := r.Form[param]; !ok {
+			missingParam = true
+			break
+		}
+	}
+	
+
+	if (missingParam) {
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		io.WriteString(w, fmt.Sprintf("%+v", r.Form))
+		w.WriteHeader(http.StatusOK)
 	}
 }
 

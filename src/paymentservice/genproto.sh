@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# [START gke_currencyservice_genproto]
+# [START gke_frontend_genproto]
 
-# protos are loaded dynamically for node, simply copies over the proto.
-mkdir -p proto
-cp -r ../../pb/* ./proto
+PATH=$PATH:$GOPATH/bin
+protodir=../../pb
 
-# [END gke_currencyservice_genproto]
+protoc --go_out=plugins=grpc:genproto -I $protodir $protodir/demo.proto
+
+# [END gke_frontend_genproto]
