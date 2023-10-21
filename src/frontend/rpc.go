@@ -17,7 +17,7 @@ package main
 import (
 	"context"
 	"time"
-	"fmt"
+//	"fmt"
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/frontend/genproto"
 
 	"github.com/pkg/errors"
@@ -55,13 +55,6 @@ func (fe *frontendServer) getProduct(ctx context.Context, id string) (*pb.Produc
 }
 
 func (fe *frontendServer) addProduct(ctx context.Context, money *pb.Money, id, name, desc, img string, categories []string) error {
-	//_, err := pb.NewProductCatalogServiceClient(fe.productCatalogSvcConn).
-	//	AddNewProduct(ctx, &pb.Product{Id: id,
-	//		Name: name,
-	//		Description: desc,
-	//		Picture: img,
-	//		PriceUsd: money,
-	//		Categories: categories})
 
 
 	mon := &pb.Product{Id: id,
@@ -70,8 +63,14 @@ func (fe *frontendServer) addProduct(ctx context.Context, money *pb.Money, id, n
                         Picture: img,
                         PriceUsd: money,
                         Categories: categories}
-	log.Info(fmt.Sprintf("%+v", mon))
 
+
+	_, err := pb.NewProductCatalogServiceClient(fe.productCatalogSvcConn).
+                AddNewProduct(ctx, mon)
+
+	if (err != nil) {
+		log.Info("Error occured")
+	}
 	return nil
 }
 

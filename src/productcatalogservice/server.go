@@ -28,6 +28,8 @@ import (
 	"syscall"
 	"time"
 	"math/rand"
+	"sort"
+	"strconv"
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -217,6 +219,24 @@ func readCatalogFile(catalog *pb.ListProductsResponse) error {
 		log.Warnf("failed to parse the catalog JSON: %v", err)
 		return err
 	}
+
+
+	sort.Slice(catalog.Products, func(i, j int) bool { 
+		firstVal, _ := strconv.Atoi(catalog.Products[i].Id)
+		secondVal, _ := strconv.Atoi(catalog.Products[j].Id)
+		return firstVal < secondVal })
+
+	isSorted := sort.SliceIsSorted(catalog.Products, func (i, j int) bool {
+		firstVal, _ := strconv.Atoi(catalog.Products[i].Id)
+                secondVal, _ := strconv.Atoi(catalog.Products[j].Id)
+                return firstVal < secondVal })
+
+	if (isSorted) {
+		log.Info("Sorted Successfully")
+	} else {
+		log.Info("Sort did not work!!!!")
+	}
+
 	log.Info("successfully parsed product catalog json")
 	return nil
 }
@@ -250,11 +270,22 @@ func (p *productCatalog) ListProducts(context.Context, *pb.Empty) (*pb.ListProdu
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
 	time.Sleep(extraLatency)
 	var found *pb.Product
-	for i := 0; i < len(parseCatalog()); i++ {
-		if req.Id == parseCatalog()[i].Id {
-			found = parseCatalog()[i]
-		}
-	}
+
+	before := time.Now()
+//	for i := 0; i < len(parseCatalog()); i++ {
+//		if req.Id == parseCatalog()[i].Id {
+//			found = parseCatalog()[i]
+//		}
+//	}
+
+	i := sort.Search(len(parseCatalog(), func (ind int) bool { return 
+		firstVal, _ := strconv.Atoi(parseCatalog()[ind].Id)
+		secondVal, _ := strconv.Atoi(req.Id)
+		return firstVal >= secondVal })
+
+
+	after := time.Since(before)
+	log.Info(fmt.Sprintf("Took %s", after))
 	if found == nil {
 		return nil, status.Errorf(codes.NotFound, "no product with ID %s", req.Id)
 	}
@@ -277,18 +308,20 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*pb.Empty, error) {
 	var found bool
 	found = false
+
+//	log.Info(fmt.Sprintf("+%v", req))
+
 	for i := 0; i < len(parseCatalog()); i++ {
                 if req.Id == parseCatalog()[i].Id {
                         found = true
 			break
                 }
         }
-        if found == false {
-		log.Info("Is this a new Product?")
-                return nil, status.Errorf(codes.NotFound, "no product with ID %s", req.Id)
+        if found == true {
+                return nil, status.Errorf(codes.NotFound, "product with ID %s already exists!", req.Id)
         }
 
-	log.Info("Already existsss!!!!")
+	log.Info("product added successfully!")
         return &pb.Empty{}, nil
 }
 
