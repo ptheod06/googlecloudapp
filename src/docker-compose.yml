@@ -47,6 +47,8 @@ services:
   recommendationservice:
     build: ./recommendationservice/
 #    image: gcr.io/google-samples/microservices-demo/recommendationservice:v0.5.2
+    depends_on:
+      - rabbitmq
     container_name: 'gcloud_app_recommend'
     ports:
       - "8080:8080"
