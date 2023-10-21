@@ -271,7 +271,6 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 	time.Sleep(extraLatency)
 	var found *pb.Product
 
-	before := time.Now()
 //	for i := 0; i < len(parseCatalog()); i++ {
 //		if req.Id == parseCatalog()[i].Id {
 //			found = parseCatalog()[i]
@@ -283,20 +282,17 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 		secondVal, _ := strconv.Atoi(req.Id)
 		return firstVal >= secondVal })
 
-	after := time.Since(before)
-
 	if (i < len(parseCatalog()) && parseCatalog()[i].Id == req.Id) {
 
-		log.Info(fmt.Sprintf("%+v", parseCatalog()[i]))
+		log.Info(fmt.Sprintf("Found at index: %d", i))
 		found = parseCatalog()[i]
 	} else {
 
 		log.Info("Product Not Found")
-		log.Info(fmt.Sprintf("index: %s", i))
+		log.Info(fmt.Sprintf("index: %d", i))
 	}
 
 
-	log.Info(fmt.Sprintf("Took %s", after))
 	if found == nil {
 		return nil, status.Errorf(codes.NotFound, "no product with ID %s", req.Id)
 	}
