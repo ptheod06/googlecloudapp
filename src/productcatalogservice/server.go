@@ -284,12 +284,12 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 
 	if (i < len(parseCatalog()) && parseCatalog()[i].Id == req.Id) {
 
-		log.Info(fmt.Sprintf("Found at index: %d", i))
+//		log.Info(fmt.Sprintf("Found at index: %d", i))
 		found = parseCatalog()[i]
 	} else {
 
-		log.Info("Product Not Found")
-		log.Info(fmt.Sprintf("index: %d", i))
+//		log.Info("Product Not Found")
+//		log.Info(fmt.Sprintf("index: %d", i))
 	}
 
 
@@ -318,17 +318,35 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*p
 
 //	log.Info(fmt.Sprintf("+%v", req))
 
-	for i := 0; i < len(parseCatalog()); i++ {
-                if req.Id == parseCatalog()[i].Id {
-                        found = true
-			break
-                }
+//	for i := 0; i < len(parseCatalog()); i++ {
+//                if req.Id == parseCatalog()[i].Id {
+//                        found = true
+//			break
+//                }
+//        }
+
+
+	i := sort.Search(len(parseCatalog()), func (ind int) bool {
+                firstVal, _ := strconv.Atoi(parseCatalog()[ind].Id)
+                secondVal, _ := strconv.Atoi(req.Id)
+                return firstVal >= secondVal })
+
+        if (i < len(parseCatalog()) && parseCatalog()[i].Id == req.Id) {
+
+        	log.Info(fmt.Sprintf("Found at index: %d", i))
+                found = true
+        } else {
+
+//              log.Info("Product Not Found")
+//              log.Info(fmt.Sprintf("index: %d", i))
         }
+
+
         if found == true {
                 return nil, status.Errorf(codes.NotFound, "product with ID %s already exists!", req.Id)
         }
 
-	log.Info("product added successfully!")
+	log.Info("product added successfully")
         return &pb.Empty{}, nil
 }
 
