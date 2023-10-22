@@ -147,7 +147,16 @@ func runReceiver() {
 	go func() {
 	  for d := range msgs {
 	    log.Info(fmt.Sprintf("Received message %s", d.Body))
-//	    calculateSimilarities(&prods)
+
+	    var prodNew Product
+
+	    json.Unmarshal(d.Body, &prodNew)
+//	    log.Info(len(products))
+
+	    products = append(products, prodNew)
+//	    log.Info(products[len(products)-1])
+
+	    calculateSimilarities(&prods)
 	  }
 	}()
 
