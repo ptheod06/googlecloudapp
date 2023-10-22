@@ -146,8 +146,8 @@ func runReceiver() {
 
 	go func() {
 	  for d := range msgs {
-	    log.Printf("Received a message: %s", d.Body)
-	    time.Sleep(10 * time.Second)
+	    log.Info(fmt.Sprintf("Received message %s", d.Body))
+//	    calculateSimilarities(&prods)
 	  }
 	}()
 
@@ -184,12 +184,6 @@ func main() {
         if err_prods != nil {
                 log.Warnf("could not parse products catalog")
         }
-
-	calculateSimilarities(&prods)
-
-	log.Info(fmt.Sprintf("%+v", prods[0]))
-
-	log.Info(fmt.Sprintf("%+v", products[0]))
 
 	port := listenPort
 	if os.Getenv("PORT") != "" {
@@ -355,6 +349,8 @@ func calculateSimilarities(allSimilarities *[]SimProducts) {
 	var topSimilarities [][]ProductComp
 
 
+	log.Info("Starting to calculate Recommendations")
+
 	before := time.Now()
 
 	for i := 0; i < len(products); i++ {
@@ -462,6 +458,11 @@ func (rs *recommendationService) ListRecommendations(ctx context.Context, in *pb
 
 	}
 
-	return &pb.ListRecommendationsResponse{ProductIds: similarProducts[:4]}, nil
+	if (len(similarProducts) < 4) {
 
+		return &pb.ListRecommendationsResponse{ProductIds: []string{"2099128"}}, nil
+	} else {
+
+		return &pb.ListRecommendationsResponse{ProductIds: similarProducts[:4]}, nil
+	}
 }

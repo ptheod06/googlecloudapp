@@ -31,6 +31,9 @@ import (
 	"sort"
 	"strconv"
 
+//	amqp "github.com/rabbitmq/amqp091-go"
+
+
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
@@ -58,7 +61,20 @@ var (
 	port = "3550"
 
 	reloadCatalog bool
+
+//	rabConn *amqp.Connection
+//	rabError error
 )
+
+
+type Product struct {
+        Name string
+        Sku int
+        Price float32
+        Category []string
+        Manufacturer string
+        Type string
+}
 
 func init() {
 	log = logrus.New()
@@ -77,6 +93,13 @@ func init() {
 		log.Warnf("could not parse product catalog")
 	}
 }
+
+func failOnError(err error, msg string) {
+  if err != nil {
+    log.Panicf("%s: %s", msg, err)
+  }
+}
+
 
 func main() {
 	if os.Getenv("ENABLE_TRACING") == "1" {
@@ -125,6 +148,8 @@ func main() {
 		}
 	}()
 
+
+
 	if os.Getenv("PORT") != "" {
 		port = os.Getenv("PORT")
 	}
@@ -151,7 +176,8 @@ func run(port string) string {
 
 	pb.RegisterProductCatalogServiceServer(srv, svc)
 	healthpb.RegisterHealthServer(srv, svc)
-	go srv.Serve(l)
+	serverError := srv.Serve(l)
+	log.Fatal(serverError)
 	return l.Addr().String()
 }
 
@@ -249,6 +275,12 @@ func parseCatalog() []*pb.Product {
 		}
 	}
 	return cat.Products
+}
+
+func sendMessageToQueue(item Product) {
+
+
+
 }
 
 func insertProduct(index int, prod *pb.Product) error {
