@@ -30,8 +30,9 @@ import (
 	"math/rand"
 	"sort"
 	"strconv"
+	"encoding/json"
 
-//	amqp "github.com/rabbitmq/amqp091-go"
+	amqp "github.com/rabbitmq/amqp091-go"
 
 
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/productcatalogservice/genproto"
@@ -159,6 +160,7 @@ func main() {
 }
 
 func run(port string) string {
+
 	l, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
 		log.Fatal(err)
@@ -180,6 +182,50 @@ func run(port string) string {
 	log.Fatal(serverError)
 	return l.Addr().String()
 }
+
+
+func sendMsgToQueue(prod Product) error{
+	conn, err := amqp.Dial("amqp://guest:guest@rabbitmq")
+	failOnError(err, "Failed to connect to RabbitMQ")
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	failOnError(err, "Failed to open a channel")
+	defer ch.Close()
+
+
+	q, err := ch.QueueDeclare(
+	  "hello", // name
+	  false,   // durable
+	  false,   // delete when unused
+	  false,   // exclusive
+	  false,   // no-wait
+	  nil,     // arguments
+	)
+	failOnError(err, "Failed to declare a queue")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	msgStr, _ := json.Marshal(prod)
+
+	body := msgStr
+
+	err = ch.PublishWithContext(ctx,
+	  "",     // exchange
+	  q.Name, // routing key
+	  false,  // mandatory
+	  false,  // immediate
+	  amqp.Publishing {
+	    ContentType: "text/plain",
+	    Body:        []byte(body),
+	  })
+	failOnError(err, "Failed to publish a message")
+	log.Printf(" [x] Sent %s\n", body)
+
+	return nil
+}
+
 
 func initStats() {
 	// TODO(drewbr) Implement OpenTelemetry stats
@@ -277,11 +323,6 @@ func parseCatalog() []*pb.Product {
 	return cat.Products
 }
 
-func sendMessageToQueue(item Product) {
-
-
-
-}
 
 func insertProduct(index int, prod *pb.Product) error {
 	products := parseCatalog()
@@ -391,14 +432,36 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*p
 
 
         if found == true {
+		log.Info("Product already exists")
                 return nil, status.Errorf(codes.NotFound, "product with ID %s already exists!", req.Id)
         }
 
 	err := insertProduct(i, req)
 
+
 	if (err != nil) {
 		log.Info("product added successfully")
         }
+
+	strSku, _ := strconv.Atoi(req.Id)
+	
+
+	err = sendMsgToQueue(Product{
+		Sku: strSku,
+		Price: float32(req.PriceUsd.Units),
+		Name: req.Name,
+		Manufacturer: "Duracell",
+		Category: req.Categories,
+		Type: "Hard Good"})
+
+	if (err != nil) {
+
+		log.Info("Message failed to be send to RabbitMQ")
+		return nil, err
+	} else {
+
+		log.Info("Message sent to RabbitMQ successfully")
+	}
 
 	return &pb.Empty{}, nil
 }
