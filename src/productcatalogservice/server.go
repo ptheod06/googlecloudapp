@@ -251,6 +251,22 @@ func parseCatalog() []*pb.Product {
 	return cat.Products
 }
 
+func insertProduct(index int, prod *pb.Product) error {
+	products := parseCatalog()
+
+	if (len(products) == index) {
+		products = append(products, prod)
+		return nil
+	}
+
+	products = append(products[:index+1], products[index:]...)
+	products[index] = prod
+
+	return nil
+
+
+}
+
 func (p *productCatalog) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
 }
@@ -346,8 +362,13 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*p
                 return nil, status.Errorf(codes.NotFound, "product with ID %s already exists!", req.Id)
         }
 
-	log.Info("product added successfully")
-        return &pb.Empty{}, nil
+	err := insertProduct(i, req)
+
+	if (err != nil) {
+		log.Info("product added successfully")
+        }
+
+	return &pb.Empty{}, nil
 }
 
 func mustMapEnv(target *string, envKey string) {

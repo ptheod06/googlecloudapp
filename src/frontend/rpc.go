@@ -69,7 +69,7 @@ func (fe *frontendServer) addProduct(ctx context.Context, money *pb.Money, id, n
                 AddNewProduct(ctx, mon)
 
 	if (err != nil) {
-		log.Info("Error occured")
+		return err
 	}
 	return nil
 }

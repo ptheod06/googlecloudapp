@@ -34,6 +34,9 @@ WORKDIR /src
 COPY --from=builder /recommendationservice /src/recommendationservice
 
 COPY recommProducts.json ./
+COPY cleaned_products.json ./
+COPY finaldetails_products.json ./
+
 
 # Definition of this variable is used by 'skaffold debug' to identify a golang binary.
 # Default behavior - a failure prints a stack trace for the current goroutine.

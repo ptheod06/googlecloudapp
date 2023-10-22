@@ -232,15 +232,22 @@ func (fe *frontendServer) newProductHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	amount := &pb.Money{CurrencyCode: "USD", Units: 15, Nanos: 990000000}
+	units, _ := strconv.ParseInt(r.Form["units"][0], 10, 64)
+	nanos, _ := strconv.ParseInt(r.Form["nanos"][0], 10, 32)
+	log.Info(nanos)
+	log.Info(int32(nanos))
+	amount := &pb.Money{CurrencyCode: "USD", Units: units, Nanos: int32(nanos)*10000000}
 
 	err := fe.addProduct(r.Context(), amount, r.Form["id"][0], r.Form["name"][0], r.Form["description"][0], r.Form["picture"][0], []string{"firstcat", "secondcat"})
 
 	if err != nil {
 		log.Info("error occured")
+		io.WriteString(w, fmt.Sprintf("Product with id %s already exists", r.Form["id"][0]))
+        	w.WriteHeader(http.StatusAlreadyReported)
+		return
 	}
 
-	io.WriteString(w, fmt.Sprint(r.Form["id"][0]))
+	io.WriteString(w, fmt.Sprintf("Product with id %s added successfully", r.Form["id"][0]))
         w.WriteHeader(http.StatusOK)
 
 }

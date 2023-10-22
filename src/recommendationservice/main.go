@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"strconv"
+	"math"
+	"sort"
 
 	"cloud.google.com/go/profiler"
 //	"github.com/google/uuid"
@@ -56,12 +58,29 @@ type SimProducts struct {
 	SimilarProducts []ProdOut
 }
 
+type ProductComp struct {
+
+	Item int
+	Similarity float64
+}
+
+type Product struct {
+	Name string
+	Sku int
+	Price float32
+	Category []string
+	Manufacturer string
+	Type string
+}
+
 
 const (
 	listenPort  = "8080"
 )
 
 var prods []SimProducts
+
+var products []Product
 
 var log *logrus.Logger
 
@@ -128,6 +147,7 @@ func runReceiver() {
 	go func() {
 	  for d := range msgs {
 	    log.Printf("Received a message: %s", d.Body)
+	    time.Sleep(10 * time.Second)
 	  }
 	}()
 
@@ -155,10 +175,21 @@ func main() {
 
 	go runReceiver()
 
-	err := readRecommFile(&prods)
-	if err != nil {
-		log.Warnf("could not parse recommendations catalog")
-	}
+//	err := readRecommFile(&prods)
+//	if err != nil {
+//		log.Warnf("could not parse recommendations catalog")
+//	}
+
+	err_prods := readProducts(&products)
+        if err_prods != nil {
+                log.Warnf("could not parse products catalog")
+        }
+
+	calculateSimilarities(&prods)
+
+	log.Info(fmt.Sprintf("%+v", prods[0]))
+
+	log.Info(fmt.Sprintf("%+v", products[0]))
 
 	port := listenPort
 	if os.Getenv("PORT") != "" {
@@ -268,6 +299,25 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	}
 }
 
+func readProducts(allProducts *[]Product) error {
+	catalogJSON, err := ioutil.ReadFile("finaldetails_products.json")
+        if err != nil {
+                log.Fatalf("failed to open products catalog json file: %v", err)
+                return err
+        }
+        if err := json.Unmarshal(catalogJSON, allProducts); err != nil {
+                log.Warnf("failed to parse the catalog JSON: %v", err)
+                return err
+        }
+
+
+        log.Info("successfully parsed products catalog json")
+        return nil
+
+
+
+}
+
 func readRecommFile(catalog *[]SimProducts) error {
 	catalogJSON, err := ioutil.ReadFile("recommProducts.json")
 	if err != nil {
@@ -281,6 +331,114 @@ func readRecommFile(catalog *[]SimProducts) error {
 	log.Info("successfully parsed recommendations catalog json")
 	return nil
 }
+
+func intersection(arr1, arr2 []string) []string {
+
+	commons := []string{}
+
+	for _, i := range arr1 {
+		for _, j := range arr2 {
+			if i==j {
+				commons = append(commons, i)
+			}
+
+		}
+
+	}
+	return commons
+}
+
+
+func calculateSimilarities(allSimilarities *[]SimProducts) {
+
+	var similarities [][]float64
+	var topSimilarities [][]ProductComp
+
+
+	before := time.Now()
+
+	for i := 0; i < len(products); i++ {
+
+		var inner_arr []float64
+
+
+		for j:= 0; j < len(products); j++ {
+			if i == j {
+				inner_arr = append(inner_arr, -1.0)
+				continue
+			}
+
+			numerator := len(intersection(products[i].Category, products[j].Category))
+
+			denominator := math.Sqrt(float64(len(products[i].Category) + 3)) * math.Sqrt(float64(len(products[j].Category) + 3))
+
+			if products[i].Price == products[j].Price {
+				numerator += 1
+			}
+
+			if products[i].Type == products[j].Type {
+                                numerator += 1
+                        }
+
+			if products[i].Manufacturer == products[j].Manufacturer { 
+                                numerator += 1
+                        }
+
+			similarity := float64(numerator) / denominator
+			inner_arr = append(inner_arr, similarity)
+		}
+
+		similarities = append(similarities, inner_arr)
+
+	}
+
+
+	for _, arrays := range similarities {
+
+		var mostSimilar = []ProductComp{}
+
+		for i := 0; i < 5; i++ {
+			prod := ProductComp{i, arrays[i]}
+			mostSimilar = append(mostSimilar, prod)
+		}
+
+		sort.Slice(mostSimilar, func(i, j int) bool { return mostSimilar[i].Similarity < mostSimilar[j].Similarity})
+		for i := 5; i < len(arrays); i++ {
+			if (mostSimilar[0].Similarity < arrays[i]) {
+				prodNew := ProductComp{i, arrays[i]}
+				mostSimilar[0] = prodNew
+				sort.Slice(mostSimilar, func(i, j int) bool { return mostSimilar[i].Similarity < mostSimilar[j].Similarity })
+			}
+
+		}
+
+		topSimilarities = append(topSimilarities, mostSimilar)
+	}
+
+	after := time.Since(before)
+
+	log.Info(after)
+
+	var allNewSimilarities = []SimProducts{}
+
+
+	for i := 0; i < len(products); i++ {
+		var currSimilarities = []ProdOut{}
+
+		for _, item := range topSimilarities[i] {
+
+			currSimilarities = append(currSimilarities, ProdOut{products[item.Item].Sku, item.Similarity})
+		}
+
+		allNewSimilarities = append(allNewSimilarities, SimProducts{products[i].Sku, currSimilarities})
+
+	}
+
+	*allSimilarities = allNewSimilarities
+
+}
+
+
 
 func (rs *recommendationService) Check(ctx context.Context, req *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
