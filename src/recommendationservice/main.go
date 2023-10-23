@@ -25,6 +25,7 @@ import (
 	"strconv"
 	"math"
 	"sort"
+	"sync"
 
 	"cloud.google.com/go/profiler"
 //	"github.com/google/uuid"
@@ -74,9 +75,12 @@ type Product struct {
 }
 
 
+
 const (
 	listenPort  = "8080"
 )
+
+var mu sync.Mutex
 
 var prods []SimProducts
 
@@ -193,6 +197,8 @@ func main() {
         if err_prods != nil {
                 log.Warnf("could not parse products catalog")
         }
+
+	calculateSimilarities(&prods)
 
 	port := listenPort
 	if os.Getenv("PORT") != "" {
@@ -439,6 +445,9 @@ func calculateSimilarities(allSimilarities *[]SimProducts) {
 
 	}
 
+	mu.Lock()
+	defer mu.Unlock()
+
 	*allSimilarities = allNewSimilarities
 
 }
@@ -457,6 +466,9 @@ func (rs *recommendationService) Watch(req *healthpb.HealthCheckRequest, ws heal
 func (rs *recommendationService) ListRecommendations(ctx context.Context, in *pb.ListRecommendationsRequest) (*pb.ListRecommendationsResponse, error) {
 
 	var similarProducts []string
+
+	mu.Lock()
+	defer mu.Unlock()
 	for _, item := range prods {
 		if (in.ProductIds[0] == strconv.Itoa(item.Sku)) {
 			for i := 0; i < len(item.SimilarProducts); i++ {
