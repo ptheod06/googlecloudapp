@@ -54,15 +54,17 @@ func (fe *frontendServer) getProduct(ctx context.Context, id string) (*pb.Produc
 	return resp, err
 }
 
-func (fe *frontendServer) addProduct(ctx context.Context, money *pb.Money, id, name, desc, img string, categories []string) error {
+func (fe *frontendServer) addProduct(ctx context.Context, money *pb.Money, id, name, desc, img string, categories []string, prodType, manufacturer string) error {
 
 
-	mon := &pb.Product{Id: id,
+	mon := &pb.ProductNew{Id: id,
                         Name: name,
                         Description: desc,
                         Picture: img,
                         PriceUsd: money,
-                        Categories: categories}
+                        Categories: categories,
+			Type: prodType,
+			Manufacturer: manufacturer}
 
 
 	_, err := pb.NewProductCatalogServiceClient(fe.productCatalogSvcConn).

@@ -208,7 +208,7 @@ func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (fe *frontendServer) newProductHandler(w http.ResponseWriter, r *http.Request) {
-	neededParams := []string{"id", "name", "description", "picture", "units", "nanos"}
+	neededParams := []string{"id", "name", "description", "picture", "units", "nanos", "categories", "type", "manufacturer"}
 	r.ParseForm()
 	missingParam := false
 
@@ -238,7 +238,9 @@ func (fe *frontendServer) newProductHandler(w http.ResponseWriter, r *http.Reque
 	log.Info(int32(nanos))
 	amount := &pb.Money{CurrencyCode: "USD", Units: units, Nanos: int32(nanos)*10000000}
 
-	err := fe.addProduct(r.Context(), amount, r.Form["id"][0], r.Form["name"][0], r.Form["description"][0], r.Form["picture"][0], []string{"firstcat", "secondcat"})
+	categories := strings.Split(r.Form["categories"][0], ",")
+
+	err := fe.addProduct(r.Context(), amount, r.Form["id"][0], r.Form["name"][0], r.Form["description"][0], r.Form["picture"][0], categories, r.Form["type"][0], r.Form["manufacturer"][0])
 
 	if err != nil {
 		log.Info("error occured")

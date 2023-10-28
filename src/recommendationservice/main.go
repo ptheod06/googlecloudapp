@@ -150,8 +150,6 @@ func runReceiver() {
 
 	go func() {
 	  for d := range msgs {
-	    log.Info(fmt.Sprintf("Received message %s", d.Body))
-
 	    var prodNew Product
 
 	    json.Unmarshal(d.Body, &prodNew)
@@ -164,7 +162,6 @@ func runReceiver() {
 	  }
 	}()
 
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	<-forever
 
 }
@@ -428,7 +425,7 @@ func calculateSimilarities(allSimilarities *[]SimProducts) {
 
 	after := time.Since(before)
 
-	log.Info(after)
+	log.Info("Finished recommendations. Done in ", after)
 
 	var allNewSimilarities = []SimProducts{}
 

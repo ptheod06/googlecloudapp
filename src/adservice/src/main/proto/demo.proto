@@ -70,6 +70,7 @@ service ProductCatalogService {
     rpc ListProducts(Empty) returns (ListProductsResponse) {}
     rpc GetProduct(GetProductRequest) returns (Product) {}
     rpc SearchProducts(SearchProductsRequest) returns (SearchProductsResponse) {}
+    rpc AddNewProduct(ProductNew) returns (Empty) {}
 }
 
 message Product {
@@ -82,6 +83,21 @@ message Product {
     // Categories such as "clothing" or "kitchen" that can be used to look up
     // other related products.
     repeated string categories = 6;
+}
+
+message ProductNew {
+    string id = 1;
+    string name = 2;
+    string description = 3;
+    string picture = 4;
+    Money price_usd = 5;
+
+    // Categories such as "clothing" or "kitchen" that can be used to look up
+    // other related products.
+    repeated string categories = 6;
+
+    string type = 7;
+    string manufacturer = 8;
 }
 
 message ListProductsResponse {

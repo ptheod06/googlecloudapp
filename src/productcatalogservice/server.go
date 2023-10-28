@@ -401,7 +401,7 @@ func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProdu
 	return &pb.SearchProductsResponse{Results: ps}, nil
 }
 
-func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*pb.Empty, error) {
+func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.ProductNew) (*pb.Empty, error) {
 	var found bool
 	found = false
 
@@ -436,7 +436,14 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*p
                 return nil, status.Errorf(codes.NotFound, "product with ID %s already exists!", req.Id)
         }
 
-	err := insertProduct(i, req)
+	freshProd := &pb.Product{Id: req.Id,
+                        Name: req.Name,
+                        Description: req.Description,
+                        Picture: req.Picture,
+                        PriceUsd: req.PriceUsd,
+                        Categories: req.Categories}
+
+	err := insertProduct(i, freshProd)
 
 
 	if (err != nil) {
@@ -450,9 +457,9 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*p
 		Sku: strSku,
 		Price: float32(req.PriceUsd.Units),
 		Name: req.Name,
-		Manufacturer: "Duracell",
+		Manufacturer: req.Manufacturer,
 		Category: req.Categories,
-		Type: "Hard Good"})
+		Type: req.Type})
 
 	if (err != nil) {
 
@@ -462,6 +469,8 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.Product) (*p
 
 		log.Info("Message sent to RabbitMQ successfully")
 	}
+
+	log.Info(fmt.Sprintf("%+v", req))
 
 	return &pb.Empty{}, nil
 }

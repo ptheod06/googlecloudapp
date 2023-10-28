@@ -326,7 +326,8 @@ main {
 
 .hot-product-card img {
   width: 100%;
-  height: auto;
+  height: 270px;
+  object-fit: contain;
   border-radius: 20% 0 20% 20%;
 }
 
