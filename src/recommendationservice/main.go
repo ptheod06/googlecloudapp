@@ -442,6 +442,10 @@ func calculateSimilarities(allSimilarities *[]SimProducts) {
 
 	}
 
+	sort.Slice(allNewSimilarities, func (i, j int) bool {
+		return allNewSimilarities[i].Sku < allNewSimilarities[j].Sku })
+
+
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -466,15 +470,29 @@ func (rs *recommendationService) ListRecommendations(ctx context.Context, in *pb
 
 	mu.Lock()
 	defer mu.Unlock()
-	for _, item := range prods {
-		if (in.ProductIds[0] == strconv.Itoa(item.Sku)) {
-			for i := 0; i < len(item.SimilarProducts); i++ {
-				similarProducts = append(similarProducts, strconv.Itoa(item.SimilarProducts[i].Sku))
-			}
-			break
-		}
 
+//	for _, item := range prods {
+//		if (in.ProductIds[0] == strconv.Itoa(item.Sku)) {
+//			for i := 0; i < len(item.SimilarProducts); i++ {
+//				similarProducts = append(similarProducts, strconv.Itoa(item.SimilarProducts[i].Sku))
+//			}
+//			break
+//		}
+//
+//	}
+
+	idStr, _ := strconv.Atoi(in.ProductIds[0])
+
+	foundAt := sort.Search(len(prods), func (ind int) bool {
+		return prods[ind].Sku >= idStr
+	})
+
+	if (foundAt < len(prods) && prods[foundAt].Sku == idStr) {
+		for i := 0; i < len(prods[foundAt].SimilarProducts); i++ {
+                	similarProducts = append(similarProducts, strconv.Itoa(prods[foundAt].SimilarProducts[i].Sku))
+                }
 	}
+
 
 	if (len(similarProducts) < 4) {
 
