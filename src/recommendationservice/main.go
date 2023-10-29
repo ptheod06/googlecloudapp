@@ -481,6 +481,11 @@ func (rs *recommendationService) ListRecommendations(ctx context.Context, in *pb
 //
 //	}
 
+
+	if (len(in.ProductIds) < 1) {
+                return &pb.ListRecommendationsResponse{ProductIds: []string{"2099128"}}, nil
+        }
+
 	idStr, _ := strconv.Atoi(in.ProductIds[0])
 
 	foundAt := sort.Search(len(prods), func (ind int) bool {
