@@ -80,7 +80,7 @@ const (
 	listenPort  = "8080"
 )
 
-var mu sync.Mutex
+var mu sync.RWMutex
 
 var prods []SimProducts
 
@@ -468,8 +468,8 @@ func (rs *recommendationService) ListRecommendations(ctx context.Context, in *pb
 
 	var similarProducts []string
 
-	mu.Lock()
-	defer mu.Unlock()
+	mu.RLock()
+	defer mu.RUnlock()
 
 //	for _, item := range prods {
 //		if (in.ProductIds[0] == strconv.Itoa(item.Sku)) {
