@@ -3,6 +3,7 @@ module github.com/GoogleCloudPlatform/microservices-demo/src/frontend
 go 1.19
 
 require (
+	github.com/opentracing/opentracing-go v1.2.0
 	cloud.google.com/go/compute/metadata v0.2.3
 	cloud.google.com/go/profiler v0.3.1
 	github.com/golang/protobuf v1.5.3

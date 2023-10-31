@@ -1,5 +1,21 @@
 version: "3"
 services:
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: 'gcloud_app_jaeger'
+    ports:
+      - "6831:6831"
+      - "6832:6832"
+      - "5778:5778"
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+      - "9411:9411"
+    restart: always
+
   rabbitmq:
     image: rabbitmq
     container_name: 'gcloud_app_rabbitmq'
@@ -11,6 +27,8 @@ services:
     build: ./frontend/
 #    image: gcr.io/google-samples/microservices-demo/frontend:v0.5.1
     container_name: 'app_frontend'
+    depends_on:
+      - jaeger
     ports:
       - "80:8080"
     environment:
@@ -27,9 +45,13 @@ services:
     build: ./productcatalogservice/
 #    image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.5.2
     container_name: 'app_products'
+    depends_on:
+      - jaeger
     ports:
       - "3550:3550"
     environment:
+      - COLLECTOR_SERVICE_ADDR=jaeger:6831
+      - ENABLE_TRACING=1
       - DISABLE_PROFILER="1"
     restart: always
 
@@ -47,9 +69,9 @@ services:
   recommendationservice:
     build: ./recommendationservice/
 #    image: gcr.io/google-samples/microservices-demo/recommendationservice:v0.5.2
+    container_name: 'gcloud_app_recommend'
     depends_on:
       - rabbitmq
-    container_name: 'gcloud_app_recommend'
     ports:
       - "8080:8080"
     environment:
