@@ -16,7 +16,7 @@ package main
 
 import (
 	"context"
-	"time"
+//	"time"
 //	"fmt"
 	pb "github.com/GoogleCloudPlatform/microservices-demo/src/frontend/genproto"
 
@@ -136,14 +136,4 @@ func (fe *frontendServer) getRecommendations(ctx context.Context, userID string,
 		out = out[:4] // take only first four to fit the UI
 	}
 	return out, err
-}
-
-func (fe *frontendServer) getAd(ctx context.Context, ctxKeys []string) ([]*pb.Ad, error) {
-	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*100)
-	defer cancel()
-
-	resp, err := pb.NewAdServiceClient(fe.adSvcConn).GetAds(ctx, &pb.AdRequest{
-		ContextKeys: ctxKeys,
-	})
-	return resp.GetAds(), errors.Wrap(err, "failed to get ads")
 }
