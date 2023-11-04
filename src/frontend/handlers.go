@@ -232,8 +232,6 @@ func (fe *frontendServer) newProductHandler(w http.ResponseWriter, r *http.Reque
 
 	units, _ := strconv.ParseInt(r.Form["units"][0], 10, 64)
 	nanos, _ := strconv.ParseInt(r.Form["nanos"][0], 10, 32)
-	log.Info(nanos)
-	log.Info(int32(nanos))
 	amount := &pb.Money{CurrencyCode: "USD", Units: units, Nanos: int32(nanos)*10000000}
 
 	categories := strings.Split(r.Form["categories"][0], ",")

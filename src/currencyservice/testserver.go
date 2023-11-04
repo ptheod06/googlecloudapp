@@ -163,7 +163,7 @@ func getCurrencyData() (map[string]float64){
 // Convert between currencies
 func convert_helper(units int64, nanos int32, currency_code string, to_code string) {
 
-	log.Info("Units %v", units)
+//	log.Info("Units %v", units)
 
 	var currency_list map[string]float64
 
@@ -219,7 +219,7 @@ func carry(amount Money_Temp) (Money_Temp) {
 // Get all supported currencies produces a shipping quote (cost) in USD.
 func (s *currencyServer) GetSupportedCurrencies(ctx context.Context, in *pb.Empty) (*pb.GetSupportedCurrenciesResponse, error) {
 
-	log.Info("Got request on all currencies")
+//	log.Info("Got request on all currencies")
 
 	var curr_codes []string
 
@@ -238,7 +238,7 @@ func (s *currencyServer) GetSupportedCurrencies(ctx context.Context, in *pb.Empt
 
 func (s *currencyServer) Convert(ctx context.Context, in *pb.CurrencyConversionRequest) (*pb.Money, error) {
 
-	log.Info("Got request on conversion")
+//	log.Info("Got request on conversion")
 //	log.Info("To Code %v", in.ToCode)
 //	log.Info("Price %v", in.From.Units)
 
