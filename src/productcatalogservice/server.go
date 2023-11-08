@@ -46,6 +46,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"go.mongodb.org/mongo-driver/mongo"
+        "go.mongodb.org/mongo-driver/mongo/options"
+//        "go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/bson"
+
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -280,6 +285,12 @@ func initProfiling(service, version string) {
 type productCatalog struct{}
 
 func readCatalogFile(catalog *pb.ListProductsResponse) error {
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://mongodb:27017"))
+        if err != nil {
+                panic(err)
+        }
+
+
 	catalogMutex.Lock()
 	defer catalogMutex.Unlock()
 	catalogJSON, err := ioutil.ReadFile("bestProducts.json")
@@ -308,6 +319,17 @@ func readCatalogFile(catalog *pb.ListProductsResponse) error {
 	} else {
 		log.Info("Sort did not work!!!!")
 	}
+
+	dbprods := client.Database("mydb").Collection("products")
+
+	dbItem := bson.D{{"Name", catalog.Products[0].Name}, {"Id", catalog.Products[0].Id}, {"Category", catalog.Products[0].Categories}}
+
+	result, err := dbprods.InsertOne(context.TODO(), dbItem)
+
+	if err != nil {
+        	panic(err)
+	}
+	log.Info(result.InsertedID)
 
 	log.Info("successfully parsed product catalog json")
 	return nil

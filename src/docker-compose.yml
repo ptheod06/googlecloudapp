@@ -1,5 +1,11 @@
 version: "3"
 services:
+  mongodb:
+    image: mongo
+    restart: always
+    ports:
+      - "27017:27017"
+
   rabbitmq:
     image: rabbitmq
     container_name: 'gcloud_app_rabbitmq'
@@ -31,6 +37,8 @@ services:
       - "3550:3550"
     environment:
       - DISABLE_PROFILER="1"
+    depends_on:
+      - mongodb
     restart: always
 
   currencyservice:

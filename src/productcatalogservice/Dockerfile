@@ -22,6 +22,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 
+RUN go mod tidy
 # Skaffold passes in debug-oriented compiler flags
 ARG SKAFFOLD_GO_GCFLAGS
 RUN go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /productcatalogservice .
