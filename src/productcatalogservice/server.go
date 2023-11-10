@@ -28,7 +28,7 @@ import (
 	"syscall"
 	"time"
 	"math/rand"
-	"sort"
+//	"sort"
 	"strconv"
 	"encoding/json"
 
@@ -427,6 +427,8 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.ProductNew) 
 	var found bool
 	found = false
 
+	var foundProd pb.Product
+
 //	log.Info(fmt.Sprintf("+%v", req))
 
 //	for i := 0; i < len(parseCatalog()); i++ {
@@ -436,20 +438,21 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.ProductNew) 
 //                }
 //        }
 
+	dbprods := mongoConn.Database("mydb").Collection("products")
 
-	i := sort.Search(len(parseCatalog()), func (ind int) bool {
-                firstVal, _ := strconv.Atoi(parseCatalog()[ind].Id)
-                secondVal, _ := strconv.Atoi(req.Id)
-                return firstVal >= secondVal })
 
-        if (i < len(parseCatalog()) && parseCatalog()[i].Id == req.Id) {
+	err := dbprods.FindOne(context.TODO(), bson.D{{"id", req.Id}}).Decode(&foundProd)
 
-        	log.Info(fmt.Sprintf("Found at index: %d", i))
-                found = true
-        } else {
+	if err == nil {
+		found = true
+	}
 
-//              log.Info("Product Not Found")
-//              log.Info(fmt.Sprintf("index: %d", i))
+        if err != nil {
+		if err == mongo.ErrNoDocuments {
+			found = false
+		} else {
+			log.Info(err)
+		}
         }
 
 
@@ -458,22 +461,22 @@ func (p *productCatalog) AddNewProduct(ctx context.Context, req *pb.ProductNew) 
                 return nil, status.Errorf(codes.NotFound, "product with ID %s already exists!", req.Id)
         }
 
-	freshProd := &pb.Product{Id: req.Id,
+	freshProd := pb.Product{Id: req.Id,
                         Name: req.Name,
                         Description: req.Description,
                         Picture: req.Picture,
                         PriceUsd: req.PriceUsd,
                         Categories: req.Categories}
 
-	err := insertProduct(i, freshProd)
-
+	_, err = dbprods.InsertOne(context.TODO(), freshProd)
 
 	if (err != nil) {
-		log.Info("product added successfully")
+		log.Info(err)
+		return nil, err
         }
 
 	strSku, _ := strconv.Atoi(req.Id)
-	
+
 
 	err = sendMsgToQueue(Product{
 		Sku: strSku,
