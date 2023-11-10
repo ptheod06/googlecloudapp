@@ -70,6 +70,9 @@ var (
 
 //	rabConn *amqp.Connection
 //	rabError error
+
+
+	mongoConn *mongo.Client
 )
 
 
@@ -83,6 +86,8 @@ type Product struct {
 }
 
 func init() {
+
+
 	log = logrus.New()
 	log.Formatter = &logrus.JSONFormatter{
 		FieldMap: logrus.FieldMap{
@@ -285,11 +290,6 @@ func initProfiling(service, version string) {
 type productCatalog struct{}
 
 func readCatalogFile(catalog *pb.ListProductsResponse) error {
-	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://mongodb:27017"))
-        if err != nil {
-                panic(err)
-        }
-
 
 	catalogMutex.Lock()
 	defer catalogMutex.Unlock()
@@ -304,34 +304,41 @@ func readCatalogFile(catalog *pb.ListProductsResponse) error {
 	}
 
 
-	sort.Slice(catalog.Products, func(i, j int) bool { 
-		firstVal, _ := strconv.Atoi(catalog.Products[i].Id)
-		secondVal, _ := strconv.Atoi(catalog.Products[j].Id)
-		return firstVal < secondVal })
+	var dbProducts []interface{}
 
-	isSorted := sort.SliceIsSorted(catalog.Products, func (i, j int) bool {
-		firstVal, _ := strconv.Atoi(catalog.Products[i].Id)
-                secondVal, _ := strconv.Atoi(catalog.Products[j].Id)
-                return firstVal < secondVal })
 
-	if (isSorted) {
-		log.Info("Sorted Successfully")
-	} else {
-		log.Info("Sort did not work!!!!")
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI("mongodb://mongodb:27017"))
+        if err != nil {
+                panic(err)
+        }
+
+	log.Info("Connected to MongoDB")
+
+	mongoConn = client
+
+	dbprods := mongoConn.Database("mydb").Collection("products")
+
+	indexModel := mongo.IndexModel{
+	    Keys: bson.D{{"id", 1}}}
+
+
+	for _, item := range catalog.Products {
+		dbProducts = append(dbProducts, item)
 	}
 
-	dbprods := client.Database("mydb").Collection("products")
-
-	dbItem := bson.D{{"Name", catalog.Products[0].Name}, {"Id", catalog.Products[0].Id}, {"Category", catalog.Products[0].Categories}}
-
-	result, err := dbprods.InsertOne(context.TODO(), dbItem)
+	_, err = dbprods.InsertMany(context.TODO(), dbProducts)
 
 	if err != nil {
         	panic(err)
 	}
-	log.Info(result.InsertedID)
 
-	log.Info("successfully parsed product catalog json")
+	_, err = dbprods.Indexes().CreateOne(context.TODO(), indexModel)
+        if err != nil {
+                panic(err)
+        }
+
+	log.Info("successfully inserted products to MongoDB")
+
 	return nil
 }
 
@@ -380,7 +387,7 @@ func (p *productCatalog) ListProducts(context.Context, *pb.Empty) (*pb.ListProdu
 
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
 	time.Sleep(extraLatency)
-	var found *pb.Product
+	var found pb.Product
 
 //	for i := 0; i < len(parseCatalog()); i++ {
 //		if req.Id == parseCatalog()[i].Id {
@@ -388,26 +395,19 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 //		}
 //	}
 
-	i := sort.Search(len(parseCatalog()), func (ind int) bool {
-		firstVal, _ := strconv.Atoi(parseCatalog()[ind].Id)
-		secondVal, _ := strconv.Atoi(req.Id)
-		return firstVal >= secondVal })
 
-	if (i < len(parseCatalog()) && parseCatalog()[i].Id == req.Id) {
+	dbprods := mongoConn.Database("mydb").Collection("products")
 
-//		log.Info(fmt.Sprintf("Found at index: %d", i))
-		found = parseCatalog()[i]
-	} else {
+	err := dbprods.FindOne(context.TODO(), bson.D{{"id", req.Id}}).Decode(&found)
 
-//		log.Info("Product Not Found")
-//		log.Info(fmt.Sprintf("index: %d", i))
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, status.Errorf(codes.NotFound, "no product with ID %s", req.Id)
+		}
 	}
 
 
-	if found == nil {
-		return nil, status.Errorf(codes.NotFound, "no product with ID %s", req.Id)
-	}
-	return found, nil
+	return &found, nil
 }
 
 func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProductsRequest) (*pb.SearchProductsResponse, error) {
