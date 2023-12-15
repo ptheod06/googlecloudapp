@@ -31,6 +31,7 @@ import (
 	"sort"
 	"strconv"
 	"encoding/json"
+	"io"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 
@@ -87,7 +88,9 @@ func init() {
 		},
 		TimestampFormat: time.RFC3339Nano,
 	}
-	log.Out = os.Stdout
+	log.SetOutput(io.Discard)
+
+
 	catalogMutex = &sync.Mutex{}
 	err := readCatalogFile(&cat)
 	if err != nil {

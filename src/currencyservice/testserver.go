@@ -22,6 +22,7 @@ import (
 	"math"
 	"encoding/json"
 	"strconv"
+	"io"
 
 	"cloud.google.com/go/profiler"
 	"github.com/sirupsen/logrus"
@@ -63,7 +64,7 @@ func init() {
 		},
 		TimestampFormat: time.RFC3339Nano,
 	}
-	log.Out = os.Stdout
+	log.SetOutput(io.Discard)
 }
 
 func main() {

@@ -71,17 +71,6 @@ services:
       - DISABLE_PROFILER="1"
     restart: always
 
-  emailservice:
-    build: ./emailservice/
-#    image: gcr.io/google-samples/microservices-demo/emailservice:v0.5.2
-    container_name: 'gcloud_app_email'
-    ports:
-      - "5000:8080"
-    environment:
-      - PORT=8080
-      - DISABLE_PROFILER="1"
-    restart: always
-
   paymentservice:
     build: ./paymentservice/
 #    image: gcr.io/google-samples/microservices-demo/paymentservice:v0.5.2

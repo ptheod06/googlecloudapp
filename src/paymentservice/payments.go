@@ -8,6 +8,7 @@ import (
 	//"math"
 	"strconv"
 	"strings"
+	"io"
 
 	"github.com/google/uuid"
 	"github.com/durango/go-credit-card"
@@ -45,7 +46,7 @@ func init() {
 		},
 		TimestampFormat: time.RFC3339Nano,
 	}
-	log.Out = os.Stdout
+	log.SetOutput(io.Discard)
 }
 
 func main() {
@@ -145,7 +146,7 @@ func initProfiling(service, version string) {
 
 func (s *paymentServer) Charge(ctx context.Context, in *pb.ChargeRequest) (*pb.ChargeResponse, error) {
 
-	fmt.Println("Got Charge request");
+//	fmt.Println("Got Charge request");
 
 	cardYear := strconv.Itoa(int(in.CreditCard.CreditCardExpirationYear))
 	cardMonth := strconv.Itoa(int(in.CreditCard.CreditCardExpirationMonth))

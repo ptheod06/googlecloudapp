@@ -20,6 +20,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"io"
+
 
 	"cloud.google.com/go/profiler"
 	"github.com/gorilla/mux"
@@ -91,7 +93,7 @@ func main() {
 		},
 		TimestampFormat: time.RFC3339Nano,
 	}
-	log.Out = os.Stdout
+	log.SetOutput(io.Discard)
 
 	svc := new(frontendServer)
 

@@ -8,6 +8,7 @@ import (
 	//"math"
 	"encoding/json"
 	//"strconv"
+	"io"
 
 	"github.com/redis/go-redis/v9"
 
@@ -46,7 +47,7 @@ func init() {
 		},
 		TimestampFormat: time.RFC3339Nano,
 	}
-	log.Out = os.Stdout
+	log.SetOutput(io.Discard)
 }
 
 func main() {
@@ -153,7 +154,7 @@ func initProfiling(service, version string) {
 
 func (s *cartServer) AddItem(ctx context.Context, in *pb.AddItemRequest) (*pb.Empty, error) {
 
-	fmt.Println("Got Add Item request");
+//	fmt.Println("Got Add Item request");
 
 //	log.Infof("Session: %s", in.UserId)
 
@@ -215,7 +216,7 @@ func (s *cartServer) AddItem(ctx context.Context, in *pb.AddItemRequest) (*pb.Em
 
 func (s *cartServer) GetCart(ctx context.Context, in *pb.GetCartRequest) (*pb.Cart, error) {
 
-	fmt.Println("Got Get cart request");
+//	fmt.Println("Got Get cart request");
 
 	redisCtx := context.Background()
 
@@ -237,7 +238,7 @@ func (s *cartServer) GetCart(ctx context.Context, in *pb.GetCartRequest) (*pb.Ca
 
 func (s *cartServer) EmptyCart(ctx context.Context, in *pb.EmptyCartRequest) (*pb.Empty, error) {
 
-	fmt.Println("Got empty cart request");
+//	fmt.Println("Got empty cart request");
 
 	redisCtx := context.Background()
 

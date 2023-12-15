@@ -26,6 +26,7 @@ import (
 	"math"
 	"sort"
 	"sync"
+	"io"
 
 	"cloud.google.com/go/profiler"
 //	"github.com/google/uuid"
@@ -106,7 +107,7 @@ func init() {
 		},
 		TimestampFormat: time.RFC3339Nano,
 	}
-	log.Out = os.Stdout
+	log.SetOutput(io.Discard)
 }
 
 type recommendationService struct {
